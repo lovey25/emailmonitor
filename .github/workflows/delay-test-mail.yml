@@ -1,0 +1,32 @@
+name: Delay test mail
+
+# GitHub schedule is UTC. Korea is UTC+9 and does not use daylight saving time.
+# Mon–Fri 06:00–20:00 KST:
+#   06:00–08:55 KST = 21:00–23:55 UTC, Sunday–Thursday
+#   09:00–19:55 KST = 00:00–10:55 UTC, Monday–Friday
+#   20:00 KST       = 11:00 UTC, Monday–Friday
+on:
+  schedule:
+    - cron: "*/5 21-23 * * 0-4"
+    - cron: "*/5 0-10 * * 1-5"
+    - cron: "0 11 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Send delay test mail
+        env:
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          COMPANY_EMAIL: ${{ secrets.COMPANY_EMAIL }}
+          # Manual runs can send outside the window so the SMTP setup can be checked.
+          SKIP_WINDOW_CHECK: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
+        run: python3 scripts/send_delay_test_mail.py
